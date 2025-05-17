@@ -8,9 +8,9 @@ export const fetchCripto = async (setRegistros) => {
     if (!response.ok) {
       throw new Error('Erro ao buscar Criptos');
     }
-    const data = await response.json();
-    console.log('Dados recebidos:', data); // Para debugar a resposta da API
-    setRegistros(data);  // Atualiza o estado com os dados recebidos
+    const result = await response.json();
+    console.log('Dados recebidos:', result); // Para debugar a resposta da API
+    setRegistros(result.data);  // Atualiza o estado com os dados recebidos
   } catch (error) {
     console.error('Erro ao buscar Criptos:', error);
     throw error;
@@ -27,30 +27,34 @@ export const createCripto = async (criptoData) => {
       },
       body: JSON.stringify(criptoData),
     });
- 
-    if (response.status === 204) {
-      Alert.alert('Sucesso!', 'Cadastro realizado com sucesso!');
-      return {};  // Retorna um objeto vazio para evitar erro
+
+    // Se a resposta for 204 (No Content) ou 200 (OK), consideramos sucesso
+    if (response.status === 204 || response.status === 200) {
+      return true;
     }
- 
+
     const textResponse = await response.text();
     let responseData;
     try {
       responseData = JSON.parse(textResponse);
     } catch (error) {
-      console.warn('A resposta não é um JSON válido.');
-      responseData = null;
+      console.warn('A resposta não é um JSON válido:', textResponse);
+      throw new Error('Erro ao processar resposta da API');
     }
- 
-    if (!response.ok || !responseData) {
-      throw new Error(responseData?.message || 'Erro desconhecido na API');
+
+    if (!responseData) {
+      throw new Error('Resposta vazia da API');
     }
- 
+
+    if (!response.ok) {
+      throw new Error(responseData.message || 'Erro desconhecido na API');
+    }
+
     return responseData;
   } catch (error) {
     console.error('Erro ao cadastrar Cripto:', error.message);
     Alert.alert('Erro ao cadastrar', `Detalhes: ${error.message}`);
-    return null;
+    return false;
   }
 };
  
@@ -66,7 +70,7 @@ export const deleteCripto = async (criptoId, setRegistros) => {
       if (responseData.success) {
         Alert.alert('Sucesso!', responseData.message);
         setRegistros((prevRegistros) => {
-          const novaLista = prevRegistros.filter((cripto) => cripto.codigo !== criptoId);
+          const novaLista = prevRegistros.filter((cripto) => cripto.id !== criptoId);
           return novaLista;
         });
       } else {
